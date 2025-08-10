@@ -74,6 +74,16 @@ plt.tight_layout()
 plt.show()
 ```
 
+📝 Explicação
+
+Ordena por revenue (maior→menor) e pega Top 10.
+
+plt.bar(): barras de receita por título.
+
+xticks(rotation=45): melhora leitura dos rótulos.
+
+tight_layout(): evita sobreposição de textos.
+
 ```
 # 03 - ROI (Retorno sobre Investimento)
 
@@ -86,7 +96,15 @@ df['roi'] = (df['revenue'] - df['budget']) / df['budget']
 print(df[['title', 'roi']].sort_values(by='roi', ascending=False).head(10))
 ```
 
+📝 Explicação
 
+Filtro budget > 0: evita divisão por zero.
+
+Fórmula: roi = (revenue - budget) / budget.
+
+Ordena por ROI para ver filmes mais rentáveis proporcionalmente.
+
+```
 # 04 - Lançamentos por Ano
 
 import pandas as pd
@@ -103,7 +121,17 @@ plt.xlabel('Ano')
 plt.ylabel('Quantidade de filmes')
 plt.grid(True)
 plt.show()
+```
 
+📝 Explicação
+
+Converte datas e extrai o ano (dt.year).
+
+Conta filmes por ano (value_counts).
+
+Linha temporal: tendência de lançamentos.
+
+```
 # 05 - Duração dos Filmes (Runtime)
 
 import pandas as pd
@@ -116,7 +144,14 @@ plt.title('Distribuição da Duração dos Filmes')
 plt.xlabel('Minutos')
 plt.ylabel('Frequência')
 plt.show()
+```
+📝 Explicação
 
+Histograma (bins=30) da duração dos filmes.
+
+dropna(): remove nulos para não distorcer a distribuição.
+
+```
 # 06 - Filmes Mais Populares e Mais Votados
 
 import pandas as pd
@@ -128,7 +163,14 @@ print(df[['title', 'popularity']].sort_values(by='popularity', ascending=False).
 
 print("\nTop 10 por Número de Votos:")
 print(df[['title', 'vote_count']].sort_values(by='vote_count', ascending=False).head(10))
+```
+📝 Explicação
 
+Popularidade (TMDB) vs Engajamento (nº de votos).
+
+Dois rankings para comparar fama x participação.
+
+```
 # 07 - Média de Avaliação por Idioma
 
 import pandas as pd
@@ -137,7 +179,19 @@ df = pd.read_csv('tmdb_5000_movies.csv')
 
 avg_by_lang = df.groupby('original_language')['vote_average'].mean().sort_values(ascending=False)
 print(avg_by_lang)
+```
 
+📝 Explicação
+
+groupby('original_language'): agrupa por idioma original.
+
+mean() em vote_average: média de avaliação por idioma.
+
+sort_values(): do mais bem avaliado para o menos.
+
+
+
+```
 # 08 - Análise de Gêneros
 
 import pandas as pd
@@ -151,7 +205,16 @@ all_genres = sum(df['genres'], [])
 genre_counts = Counter(all_genres)
 
 print(genre_counts.most_common(10))
+```
+📝 Explicação
 
+ast.literal_eval(): interpreta string como lista/dict com segurança.
+
+Extrai name de cada gênero.
+
+Achata listas e conta frequências (Counter).
+
+```
 # 09 - Palavras-chave Mais Frequentes
 
 import pandas as pd
@@ -165,7 +228,14 @@ all_keywords = sum(df['keywords'], [])
 keyword_counts = Counter(all_keywords)
 
 print(keyword_counts.most_common(10))
+```
+📝 Explicação
 
+Mesmo processo de gêneros, agora para keywords.
+
+Mostra temas recorrentes da base.
+
+```
 # 10 - Produtoras Mais Ativas
 
 import pandas as pd
@@ -179,7 +249,15 @@ all_companies = sum(df['production_companies'], [])
 company_counts = Counter(all_companies)
 
 print(company_counts.most_common(10))
+```
 
+📝 Explicação
+
+Extrai nomes das produtoras por filme.
+
+Conta occurrences totais e lista as Top 10.
+
+```
 # 11 - Correlação entre Variáveis Numéricas
 
 import pandas as pd
@@ -194,7 +272,17 @@ corr = df[num_cols].corr()
 sns.heatmap(corr, annot=True, cmap='coolwarm')
 plt.title('Correlação entre Variáveis Numéricas')
 plt.show()
+```
+📝 Explicação
 
+Seleciona colunas numéricas chave.
+
+corr(): matriz de correlação de Pearson.
+
+sns.heatmap(..., annot=True): mapa com valores anotados.
+
+
+```
 # 12 - Países de Produção Mais Ativos
 
 import pandas as pd
@@ -208,7 +296,15 @@ all_countries = sum(df['production_countries'], [])
 country_counts = Counter(all_countries)
 
 print(country_counts.most_common(10))
+```
 
+📝 Explicação
+
+Extrai países de produção.
+
+Conta e retorna os Top 10 países mais presentes.
+
+```
 # 13 - Taglines Mais Criativas
 
 import pandas as pd
@@ -217,7 +313,17 @@ df = pd.read_csv('tmdb_5000_movies.csv')
 
 df['tagline_len'] = df['tagline'].fillna('').apply(len)
 print(df[['title', 'tagline', 'tagline_len']].sort_values(by='tagline_len', ascending=False).head(10))
+```
+📝 Explicação
 
+fillna(''): evita NaN antes de medir.
+
+apply(len): comprimento da tagline como proxy de expressividade.
+
+Ordena para ver as mais longas/ricas.
+
+
+```
 # 14 - Orçamento vs Nota Média
 
 import pandas as pd
@@ -232,7 +338,17 @@ plt.ylabel('Nota Média')
 plt.title('Orçamento vs Nota Média')
 plt.xscale('log')
 plt.show()
+```
 
+📝 Explicação
+
+Filtro budget > 0 para evitar zero na escala log.
+
+plt.scatter(): relação orçamento × nota.
+
+xscale('log'): comprime cauda longa de orçamento.
+
+```
 # 15 - Ranking Ponderado Estilo IMDb
 
 import pandas as pd
@@ -248,4 +364,14 @@ qualified['score'] = qualified.apply(
 )
 
 print(qualified[['title', 'vote_count', 'vote_average', 'score']].sort_values(by='score', ascending=False).head(10))
+```
 
+📝 Explicação
+
+C: média global de notas; m: limiar mínimo de votos (p90).
+
+Nota ponderada: mistura a nota do filme com a média global, pesadas pelo nº de votos.
+
+Ordena por score para ranking mais justo (evita topo com poucos votos).
+
+```
