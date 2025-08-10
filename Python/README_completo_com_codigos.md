@@ -37,9 +37,25 @@ print(df.isnull().sum())
 
 df['release_date'] = pd.to_datetime(df['release_date'], errors='coerce')
 print(df.dtypes)
+```
+Explicação
+
+pd.read_csv(...): carrega o CSV em um DataFrame.
+
+head(): visão rápida das primeiras linhas para checar colunas e formatos.
+
+info(): tipos das colunas e contagem de nulos (diagnóstico inicial).
+
+describe(): estatísticas descritivas das colunas numéricas.
+
+isnull().sum(): quantifica nulos por coluna.
+
+to_datetime(..., errors='coerce'): converte strings de data; valores inválidos viram NaT.
+
+
 
 # 02 - Top 10 Filmes por Receita
-
+```
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -56,7 +72,9 @@ plt.xlabel('Filme')
 plt.ylabel('Receita')
 plt.tight_layout()
 plt.show()
+```
 
+```
 # 03 - ROI (Retorno sobre Investimento)
 
 import pandas as pd
@@ -66,6 +84,8 @@ df = df[df['budget'] > 0]
 df['roi'] = (df['revenue'] - df['budget']) / df['budget']
 
 print(df[['title', 'roi']].sort_values(by='roi', ascending=False).head(10))
+```
+
 
 # 04 - Lançamentos por Ano
 
