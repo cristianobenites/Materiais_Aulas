@@ -1,14 +1,13 @@
 # EDA com Pandas, NumPy e Matplotlib (TMDB 5000 Movies)
 
 Material didático para prática guiada em **VS Code + Jupyter**, com foco em **Exploração de Dados (EDA)** utilizando
-Pandas, NumPy e gráficos com Matplotlib. O roteiro abaixo está pronto para **copiar e colar no seu repositório GitHub**
-como `README.md` e ser seguido em sala de aula.
+Pandas, NumPy e gráficos com Matplotlib. Este README já está formatado para GitHub.
 
 ---
 
 ## 🔧 Preparação do Ambiente (Terminal do VS Code)
 
-### Opção A — `venv` (recomendada)
+### Opção A — venv (recomendada)
 ```bash
 # 1) Clone do repositório
 git clone <SEU-REPO.git>
@@ -37,7 +36,6 @@ pip install -r requirements.txt
 > **Kernel**: selecione o kernel do seu ambiente (`.venv` ou `ia-movies`) ao abrir o notebook.
 
 ### (Opcional) Instalar do próprio notebook
-> Útil quando o aluno não tem acesso fácil ao terminal, mas pode falhar em ambientes restritos.
 ```python
 import importlib, sys, subprocess
 
@@ -65,7 +63,7 @@ ensure("matplotlib")
 
 ---
 
-## 🧪 Roteiro de Aula (passo a passo com explicações)
+## 🧪 Roteiro de Aula (Passo a passo)
 
 ### 1) Imports e Configuração
 ```python
@@ -80,229 +78,86 @@ pd.set_option("display.width", 120)
 np.random.seed(42)
 plt.rcParams.update({"figure.figsize": (8, 5)})
 ```
-**O que faz**:  
-- `pd.set_option`: melhora leitura no console.  
-- `np.random.seed(42)`: reprodutibilidade quando houver aleatoriedade.  
-- `plt.rcParams.update`: define tamanho padrão das figuras.
-
----
 
 ### 2) Carregamento do CSV e Diagnóstico Inicial
 ```python
-csv_path = "tmdb_5000_movies.csv"  # ajuste se necessário
+csv_path = "tmdb_5000_movies.csv"
 df = pd.read_csv(csv_path)
 
-df.head()              # amostra
-df.info()              # tipos e nulos
-df.describe().T        # estatísticas numéricas
-df.isna().sum().sort_values(ascending=False).head(20)  # nulos por coluna
+df.head()
+df.info()
+df.describe().T
+df.isna().sum().sort_values(ascending=False).head(20)
 ```
-**O que faz**:  
-- Identifica tipos, presença de nulos e ordem de grandeza das variáveis para orientar a limpeza.
 
----
-
-### 3) Limpeza e *Feature Engineering*
+### 3) Limpeza e Feature Engineering
 ```python
-# Datas
 if "release_date" in df.columns:
     df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
     df["release_year"] = df["release_date"].dt.year
 
-# Conversões numéricas
 for c in ["budget", "revenue", "runtime", "vote_average", "vote_count", "popularity"]:
     if c in df.columns:
         df[c] = pd.to_numeric(df[c], errors="coerce")
 
-# Métricas financeiras
-if set(["budget", "revenue"]).issubset(df.columns):
+if {"budget", "revenue"}.issubset(df.columns):
     df["profit"] = df["revenue"] - df["budget"]
     df["roi"] = np.where(df["budget"] > 0, (df["revenue"] - df["budget"]) / df["budget"], np.nan)
 
-# Normalizações (z-score)
 for c in ["budget", "revenue"]:
     if c in df:
         mu, sigma = df[c].mean(), df[c].std(ddof=0)
         df[f"{c}_z"] = (df[c] - mu) / sigma
-
-# Parsing de colunas JSON-like (strings)
-def parse_json_listcell(x):
-    if pd.isna(x):
-        return []
-    try:
-        lst = ast.literal_eval(x)
-        if isinstance(lst, list):
-            return [d.get("name", None) for d in lst if isinstance(d, dict)]
-    except (ValueError, SyntaxError):
-        pass
-    return []
-
-for js_col in ["genres", "keywords", "production_companies", "production_countries"]:
-    if js_col in df.columns:
-        df[f"{js_col}_names"] = df[js_col].apply(parse_json_listcell)
-
-# Flag para blockbuster (top 10% de receita)
-if "revenue" in df.columns:
-    p90 = np.nanpercentile(df["revenue"], 90)
-    df["is_blockbuster"] = df["revenue"] >= p90
 ```
-**O que faz**:  
-- Converte datas e extrai `release_year`.  
-- Garante colunas numéricas para operações.  
-- Calcula **lucro** e **ROI**.  
-- Cria **z-scores** (comparabilidade).  
-- Extrai listas de `name` das colunas com JSON serializado em string.  
-- Define `is_blockbuster` por limiar objetivo (p90).
 
 ---
 
-### 4) Análises Descritivas e `groupby`
+### 4) Análises Descritivas e Agrupamentos
 ```python
-# Top 10 por receita
 if {"revenue", "title"}.issubset(df.columns):
     top_rev = df.sort_values("revenue", ascending=False).head(10)[["title", "revenue", "budget", "profit", "roi"]]
     display(top_rev)
 
-# Lançamentos por ano
 if "release_year" in df.columns:
     releases_by_year = df["release_year"].value_counts().sort_index()
     display(releases_by_year.tail(20))
-
-# Estatísticas por gênero (explode)
-if "genres_names" in df.columns and "title" in df.columns:
-    df_gen = df.explode("genres_names")
-    df_gen = df_gen[df_gen["genres_names"].notna() & (df_gen["genres_names"] != "")]
-    agg_cols = [c for c in ["revenue", "budget", "profit", "roi", "vote_average", "popularity"] if c in df_gen.columns]
-    genre_stats = df_gen.groupby("genres_names")[agg_cols].mean().sort_values(agg_cols[0] if agg_cols else "genres_names", ascending=False)
-    display(genre_stats.head(10))
-
-# Produção por companhia
-if "production_companies_names" in df.columns:
-    df_comp = df.explode("production_companies_names")
-    comp_count = (df_comp["production_companies_names"]
-                  .value_counts()
-                  .head(15)
-                  .rename_axis("company")
-                  .reset_index(name="n_films"))
-    display(comp_count)
 ```
-**O que faz**:  
-- Ordena e explora destaques por receita.  
-- Observa tendência temporal de lançamentos.  
-- Explode gêneros para sumarização por categoria.  
-- Conta filmes por companhia.
 
 ---
 
 ### 5) Visualizações (Matplotlib)
 ```python
-# Histograma de notas
 if "vote_average" in df.columns:
     plt.figure()
     df["vote_average"].dropna().plot(kind="hist", bins=20)
     plt.title("Distribuição de Notas (vote_average)")
-    plt.xlabel("vote_average"); plt.ylabel("Frequência")
-    plt.show()
-
-# Dispersão receita × orçamento (escala log10)
-if {"revenue", "budget"}.issubset(df.columns):
-    plt.figure()
-    mask = (df["budget"] > 0) & (df["revenue"] > 0)
-    plt.scatter(np.log10(df.loc[mask, "budget"]), np.log10(df.loc[mask, "revenue"]), alpha=0.5)
-    plt.title("Receita vs Orçamento (log10)")
-    plt.xlabel("log10(budget)"); plt.ylabel("log10(revenue)")
-    plt.grid(True, alpha=0.3)
-    plt.show()
-
-# Lançamentos por ano (linha)
-if "release_year" in df.columns:
-    plt.figure()
-    df["release_year"].value_counts().sort_index().plot(kind="line")
-    plt.title("Número de Lançamentos por Ano")
-    plt.xlabel("Ano"); plt.ylabel("Qtde de filmes")
-    plt.show()
-
-# Matriz de correlação
-numeric_df = df.select_dtypes(include=[np.number]).dropna(axis=1, how="all")
-if numeric_df.shape[1] >= 2:
-    corr = numeric_df.corr(numeric_only=True)
-    plt.figure()
-    plt.imshow(corr, cmap="viridis", aspect="auto")
-    plt.colorbar(label="Correlação de Pearson")
-    plt.xticks(range(len(corr.columns)), corr.columns, rotation=90)
-    plt.yticks(range(len(corr.columns)), corr.columns)
-    plt.title("Matriz de Correlação")
-    plt.tight_layout()
+    plt.xlabel("vote_average")
+    plt.ylabel("Frequência")
     plt.show()
 ```
-**O que faz**:  
-- Explora distribuição de notas.  
-- Analisa relação orçamento–receita mitigando caudas com `log10`.  
-- Observa *trend* temporal.  
-- Identifica blocos de variáveis correlacionadas.
 
 ---
 
-### 6) `apply` vs. Vetorização (NumPy)
-```python
-def profit_bucket(p):
-    if pd.isna(p): return "NA"
-    if p < 0: return "Prejuízo"
-    elif p < 1e7: return "Lucro baixo"
-    elif p < 1e8: return "Lucro médio"
-    else: return "Lucro alto"
-
-if "profit" in df.columns:
-    df["profit_bucket_apply"] = df["profit"].apply(profit_bucket)
-
-if "profit" in df.columns:
-    conds = [df["profit"].isna(), df["profit"] < 0, df["profit"] < 1e7, df["profit"] < 1e8]
-    choices = ["NA", "Prejuízo", "Lucro baixo", "Lucro médio"]
-    df["profit_bucket_vec"] = np.select(conds, choices, default="Lucro alto")
-
-df[["profit", "profit_bucket_apply", "profit_bucket_vec"]].head(10)
-```
-**Comparativo**: `apply` é expressivo mas tende a ser mais lento; `np.select` costuma escalar melhor.
-
----
-
-### 7) Exportar Dataset Limpo
-```python
-df.to_csv("tmdb_5000_movies_clean.csv", index=False)
-```
-**O que faz**:  
-- Persiste uma versão tratada para reuso e reprodutibilidade.
-
----
-
-### 8) Exercícios Guiados
-1. Média de `vote_average` por `release_year` (interprete tendência).  
-2. Entre os 5 gêneros mais frequentes, qual tem maior `roi` médio?  
-3. Boxplot de `runtime` por gênero (use `explode("genres_names")`).  
-4. Defina **hit** como top 10% de `revenue` e avalie taxa por gênero e por ano.  
-5. Métrica composta de sucesso: `0.5*z(revenue) + 0.3*z(vote_count) + 0.2*z(popularity)` → Top 20.
-
-> **Dica**: documente *insights* após cada exercício para fortalecer a argumentação analítica.
+## 8) Exercícios Guiados
+1. Média de `vote_average` por `release_year`.
+2. ROI médio dos 5 gêneros mais frequentes.
+3. Boxplot de `runtime` por gênero.
+4. Taxa de hits (top 10% revenue) por gênero e ano.
+5. Métrica composta de sucesso e Top 20.
 
 ---
 
 ## 🧷 Troubleshooting
-- `ModuleNotFoundError`: verifique se o **kernel** do notebook aponta para o **seu ambiente** (venv/conda).  
-- Sem permissão para instalar: prefira instalar via terminal (fora do notebook).  
-- Caminhos no Windows: use `r"caminho\com\barras"` para evitar *escapes*.  
-- CSV não encontrado: ajuste `csv_path` ou coloque o arquivo na raiz do projeto.
+- `ModuleNotFoundError`: verifique o kernel selecionado.
+- CSV não encontrado: ajuste `csv_path`.
+- Sem permissão para instalar: use terminal fora do notebook.
 
 ---
 
-## 📦 requirements.txt (mínimo)
+## 📦 requirements.txt
 ```text
 pandas>=2.2
 numpy>=1.26
 matplotlib>=3.8
 jupyter>=1.0
 ```
-
----
-
-## 📜 Licença
-Defina a licença (ex.: MIT) para uso didático.
